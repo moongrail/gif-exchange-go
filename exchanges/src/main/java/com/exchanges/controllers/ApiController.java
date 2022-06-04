@@ -66,14 +66,14 @@ public class ApiController {
             model.addAttribute("gifRandom", gifDto.getUrl());
             return ResponseEntity.ok().body(ResponseDto
                     .builder()
-                    .data(Map.of("url",gifDto.getUrl()))
+                    .data(Map.of("url", gifDto.getUrl()))
                     .success(true)
                     .build());
         }
         log.info("Illegal Argument " + gifDto);
         return ResponseEntity.badRequest().body(ResponseDto
                 .builder()
-                .data(Map.of("GifDto",gifDto))
+                .data(Map.of("GifDto", gifDto))
                 .error(List.of("Illegal Argument" + gifDto))
                 .build());
     }
@@ -98,21 +98,21 @@ public class ApiController {
             model.addAttribute("gifRandom", gifDto.getUrl());
             return ResponseEntity.ok().body(ResponseDto
                     .builder()
-                    .data(Map.of("GifDto",gifDto))
+                    .data(Map.of("url", gifDto.getUrl()))
                     .success(true)
                     .build());
         }
 
         return ResponseEntity.badRequest().body(ResponseDto
                 .builder()
-                .data(Map.of("GifDto",gifDto))
+                .data(Map.of("GifDto", gifDto))
                 .error(List.of("Illegal Argument" + gifDto))
                 .build());
     }
 
     @GetMapping("/v1/yesterday/{symbol}")
-    public ResponseEntity<ResponseDto> getYesterdayCurrencyGif(@PathVariable("symbol") String symbol,
-                                                             Model model) {
+    public ResponseEntity<ResponseDto> getYesterdayCurrency(@PathVariable("symbol") String symbol,
+                                                            Model model) {
         LocalDate sendDateOne = LocalDate.now().minusDays(1);
         String sendDate = sendDateOne.format(DateTimeFormatter.ofPattern("YYYY-MM-dd"));
 
@@ -138,15 +138,15 @@ public class ApiController {
 
         return ResponseEntity.ok().body(ResponseDto
                 .builder()
-                .data(Map.of("Yesterday",yesterdayDto))
-                        .success(true)
-                        .build());
+                .data(Map.of("Yesterday", yesterdayDto))
+                .success(true)
+                .build());
     }
 
 
     @GetMapping("/v1/today/{symbol}")
-    public ResponseEntity<ResponseDto> getTodayCurrencyGif(@PathVariable("symbol") String symbol,
-                                                             Model model) {
+    public ResponseEntity<ResponseDto> getTodayCurrency(@PathVariable("symbol") String symbol,
+                                                        Model model) {
 
         model.addAttribute("uriGetBrokeGif", uriGetBrokeGif);
         model.addAttribute("uriGetRichGif", uriGetRichGif);
@@ -174,10 +174,10 @@ public class ApiController {
             model.addAttribute("currencyName", todayDto.getTo());
 
             return ResponseEntity.ok().body(ResponseDto
-                        .builder()
-                        .data(Map.of("Today",todayDto))
-                        .success(true)
-                        .build());
+                    .builder()
+                    .data(Map.of("Today", todayDto))
+                    .success(true)
+                    .build());
 
         } catch (JSONException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Currency didn't found");
@@ -187,12 +187,12 @@ public class ApiController {
     @GetMapping
     public String getResolvePage(@RequestParam("symbol") String symbol, Model model) {
 
-        if (symbol.isEmpty()){
+        if (symbol.isEmpty()) {
             symbol = "RUB";
         }
 
-        ResponseEntity<ResponseDto> currencyToday = getTodayCurrencyGif(symbol,model);
-        ResponseEntity<ResponseDto> currencyYesterday = getYesterdayCurrencyGif(symbol,model);
+        ResponseEntity<ResponseDto> currencyToday = getTodayCurrency(symbol, model);
+        ResponseEntity<ResponseDto> currencyYesterday = getYesterdayCurrency(symbol, model);
 
         JSONObject todayObj = new JSONObject(currencyToday);
         JSONObject yesterdayObj = new JSONObject(currencyYesterday);
@@ -209,7 +209,7 @@ public class ApiController {
                         .getJSONObject("data")
                         .getJSONObject("Today")
                         .getDouble("rates"))
-                        .build();
+                .build();
 
         CurrencyDto yesterday = CurrencyDto
                 .builder()
@@ -225,19 +225,20 @@ public class ApiController {
                         .getDouble("rates"))
                 .build();
 
-        model.addAttribute("currencyName",today.getTo());
-        model.addAttribute("currencyValue",today.getRates());
-        model.addAttribute("yesterdayCurrencyValue",yesterday.getRates());
+        model.addAttribute("currencyName", today.getTo());
+        model.addAttribute("currencyValue", today.getRates());
+        model.addAttribute("yesterdayCurrencyValue", yesterday.getRates());
 
 
-        Boolean result = yesterday.getRates() <= today.getRates();
-            if (result) {
-                getRichRandomGif(model);
-            }
-            getBrokeRandomGif(model);
+        boolean result = yesterday.getRates() <= today.getRates();
+
+        if (result) {
+            getRichRandomGif(model);
+        }
+        getBrokeRandomGif(model);
 
         return "resolve";
     }
 
-    
+
 }

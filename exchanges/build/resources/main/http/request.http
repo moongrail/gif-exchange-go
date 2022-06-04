@@ -1,10 +1,13 @@
-GET http://localhost:80/resolve/v1/answer/RUB
-###
 GET http://localhost:80/resolve/v1/random-gif-rich
 ###
+
 GET http://localhost:80/resolve/v1/random-gif-broke
 ###
-GET http://localhost:80/resolve
+
+GET http://localhost:80/resolve?symbol=
+###
+
+GET http://localhost:80/resolve?symbol=EUR
 ###
 
 GET http://localhost:80/resolve/v1/today/RUB

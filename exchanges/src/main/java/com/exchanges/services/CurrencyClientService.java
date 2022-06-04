@@ -15,7 +15,6 @@ public interface CurrencyClientService {
                                 @PathVariable("sendDate") String sendDate);
 
 
-
     @GetMapping(value = "/latest.json?app_id=0f82966a55114e62853dc3227668ce7b&base=USD&symbols={symbol}")
     String getTodayCurrency(@PathVariable("symbol") String symbol);
 
