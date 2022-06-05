@@ -234,8 +234,9 @@ public class ApiController {
 
         if (result) {
             getRichRandomGif(model);
+        }else {
+            getBrokeRandomGif(model);
         }
-        getBrokeRandomGif(model);
 
         return "resolve";
     }
