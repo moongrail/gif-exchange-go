@@ -3,8 +3,8 @@ package com.exchanges.controllers;
 import com.exchanges.dto.CurrencyDto;
 import com.exchanges.dto.GifDto;
 import com.exchanges.dto.ResponseDto;
-import com.exchanges.services.CurrencyClientService;
-import com.exchanges.services.GifClientService;
+import com.exchanges.services.FeignCurrencyClientService;
+import com.exchanges.services.FeignGifClientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONException;
@@ -12,12 +12,8 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -26,14 +22,14 @@ import java.util.List;
 import java.util.Map;
 
 
-@Controller
+@RestController
 @RequestMapping("/resolve")
 @RequiredArgsConstructor
 @Slf4j
 public class ApiController {
 
-    private final CurrencyClientService currencyClientService;
-    private final GifClientService gifClientService;
+    private final FeignCurrencyClientService feignCurrencyClientService;
+    private final FeignGifClientService feignGifClientService;
 
 
     @Value(value = "${defaultCurrencyTo}")
@@ -47,9 +43,9 @@ public class ApiController {
 
 
     @GetMapping("/v1/random-gif-rich")
-    public ResponseEntity<ResponseDto> getRichRandomGif(Model model) {
+    public ResponseEntity<ResponseDto> getRichRandomGif() {
 
-        String jsonString = gifClientService.getRichRandomGif();
+        String jsonString = feignGifClientService.getRichRandomGif();
 
         JSONObject obj = new JSONObject(jsonString);
 
@@ -63,7 +59,6 @@ public class ApiController {
                 .build();
 
         if (gifDto.getUrl().contains(".gif")) {
-            model.addAttribute("gifRandom", gifDto.getUrl());
             return ResponseEntity.ok().body(ResponseDto
                     .builder()
                     .data(Map.of("url", gifDto.getUrl()))
@@ -80,9 +75,9 @@ public class ApiController {
 
 
     @GetMapping("/v1/random-gif-broke")
-    public ResponseEntity<ResponseDto> getBrokeRandomGif(Model model) {
+    public ResponseEntity<ResponseDto> getBrokeRandomGif() {
 
-        String jsonString = gifClientService.getBrokeRandomGif();
+        String jsonString = feignGifClientService.getBrokeRandomGif();
         JSONObject obj = new JSONObject(jsonString);
 
         String urlGif = obj.getJSONObject("data")
@@ -95,7 +90,7 @@ public class ApiController {
                 .build();
 
         if (gifDto.getUrl().contains(".gif")) {
-            model.addAttribute("gifRandom", gifDto.getUrl());
+
             return ResponseEntity.ok().body(ResponseDto
                     .builder()
                     .data(Map.of("url", gifDto.getUrl()))
@@ -111,13 +106,12 @@ public class ApiController {
     }
 
     @GetMapping("/v1/yesterday/{symbol}")
-    public ResponseEntity<ResponseDto> getYesterdayCurrency(@PathVariable("symbol") String symbol,
-                                                            Model model) {
+    public ResponseEntity<ResponseDto> getYesterdayCurrency(@PathVariable("symbol") String symbol) {
         LocalDate sendDateOne = LocalDate.now().minusDays(1);
-        String sendDate = sendDateOne.format(DateTimeFormatter.ofPattern("YYYY-MM-dd"));
+        String sendDate = sendDateOne.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
 
-        String jsonYesterday = currencyClientService.getYesterdayCurrency(symbol, sendDate);
+        String jsonYesterday = feignCurrencyClientService.getYesterdayCurrency(symbol, sendDate);
         JSONObject yesterday = new JSONObject(jsonYesterday);
 
         CurrencyDto yesterdayDto = CurrencyDto.builder()
@@ -145,13 +139,9 @@ public class ApiController {
 
 
     @GetMapping("/v1/today/{symbol}")
-    public ResponseEntity<ResponseDto> getTodayCurrency(@PathVariable("symbol") String symbol,
-                                                        Model model) {
+    public ResponseEntity<ResponseDto> getTodayCurrency(@PathVariable("symbol") String symbol) {
 
-        model.addAttribute("uriGetBrokeGif", uriGetBrokeGif);
-        model.addAttribute("uriGetRichGif", uriGetRichGif);
-
-        String jsonToday = currencyClientService.getTodayCurrency(symbol);
+        String jsonToday = feignCurrencyClientService.getTodayCurrency(symbol);
 
         try {
             JSONObject today = new JSONObject(jsonToday);
@@ -170,8 +160,6 @@ public class ApiController {
                         .error(List.of("Empty JSON rates, wrong currency "))
                         .build());
             }
-            model.addAttribute("currencyValue", todayDto.getRates());
-            model.addAttribute("currencyName", todayDto.getTo());
 
             return ResponseEntity.ok().body(ResponseDto
                     .builder()
@@ -184,62 +172,62 @@ public class ApiController {
         }
     }
 
-    @GetMapping
-    public String getResolvePage(@RequestParam("symbol") String symbol, Model model) {
-
-        if (symbol.isEmpty()) {
-            symbol = "RUB";
-        }
-
-        ResponseEntity<ResponseDto> currencyToday = getTodayCurrency(symbol, model);
-        ResponseEntity<ResponseDto> currencyYesterday = getYesterdayCurrency(symbol, model);
-
-        JSONObject todayObj = new JSONObject(currencyToday);
-        JSONObject yesterdayObj = new JSONObject(currencyYesterday);
-
-        CurrencyDto today = CurrencyDto
-                .builder()
-                .to(todayObj
-                        .getJSONObject("body")
-                        .getJSONObject("data")
-                        .getJSONObject("Today")
-                        .getString("to"))
-                .rates(todayObj
-                        .getJSONObject("body")
-                        .getJSONObject("data")
-                        .getJSONObject("Today")
-                        .getDouble("rates"))
-                .build();
-
-        CurrencyDto yesterday = CurrencyDto
-                .builder()
-                .to(yesterdayObj
-                        .getJSONObject("body")
-                        .getJSONObject("data")
-                        .getJSONObject("Yesterday")
-                        .getString("to"))
-                .rates(yesterdayObj
-                        .getJSONObject("body")
-                        .getJSONObject("data")
-                        .getJSONObject("Yesterday")
-                        .getDouble("rates"))
-                .build();
-
-        model.addAttribute("currencyName", today.getTo());
-        model.addAttribute("currencyValue", today.getRates());
-        model.addAttribute("yesterdayCurrencyValue", yesterday.getRates());
-
-
-        boolean result = yesterday.getRates() <= today.getRates();
-
-        if (result) {
-            getRichRandomGif(model);
-        }else {
-            getBrokeRandomGif(model);
-        }
-
-        return "resolve";
-    }
+//    @GetMapping
+//    public String getResolvePage(@RequestParam("symbol") String symbol, Model model) {
+//
+//        if (symbol.isEmpty()) {
+//            symbol = "RUB";
+//        }
+//
+//        ResponseEntity<ResponseDto> currencyToday = getTodayCurrency(symbol, model);
+//        ResponseEntity<ResponseDto> currencyYesterday = getYesterdayCurrency(symbol, model);
+//
+//        JSONObject todayObj = new JSONObject(currencyToday);
+//        JSONObject yesterdayObj = new JSONObject(currencyYesterday);
+//
+//        CurrencyDto today = CurrencyDto
+//                .builder()
+//                .to(todayObj
+//                        .getJSONObject("body")
+//                        .getJSONObject("data")
+//                        .getJSONObject("Today")
+//                        .getString("to"))
+//                .rates(todayObj
+//                        .getJSONObject("body")
+//                        .getJSONObject("data")
+//                        .getJSONObject("Today")
+//                        .getDouble("rates"))
+//                .build();
+//
+//        CurrencyDto yesterday = CurrencyDto
+//                .builder()
+//                .to(yesterdayObj
+//                        .getJSONObject("body")
+//                        .getJSONObject("data")
+//                        .getJSONObject("Yesterday")
+//                        .getString("to"))
+//                .rates(yesterdayObj
+//                        .getJSONObject("body")
+//                        .getJSONObject("data")
+//                        .getJSONObject("Yesterday")
+//                        .getDouble("rates"))
+//                .build();
+//
+//        model.addAttribute("currencyName", today.getTo());
+//        model.addAttribute("currencyValue", today.getRates());
+//        model.addAttribute("yesterdayCurrencyValue", yesterday.getRates());
+//
+//
+//        boolean result = yesterday.getRates() <= today.getRates();
+//
+//        if (result) {
+//            getRichRandomGif(model);
+//        }else {
+//            getBrokeRandomGif(model);
+//        }
+//
+//        return "resolve";
+//    }
 
 
 }

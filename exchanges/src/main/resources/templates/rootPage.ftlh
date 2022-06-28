@@ -15,6 +15,5 @@
 <button id="all" type="button" onclick="location.href ='${uriExchangeUSD}${defaultCurrencyTo}'"
 >Узнать
 </button>
-
 </body>
 </html>

@@ -1,7 +1,7 @@
 package com.exchanges.controllers;
 
-import com.exchanges.services.CurrencyClientService;
-import com.exchanges.services.GifClientService;
+import com.exchanges.services.FeignCurrencyClientService;
+import com.exchanges.services.FeignGifClientService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,15 +38,15 @@ class ApiControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private CurrencyClientService currencyClientService;
+    private FeignCurrencyClientService feignCurrencyClientService;
 
     @MockBean
-    private GifClientService gifClientService;
+    private FeignGifClientService feignGifClientService;
 
     @BeforeEach
     void setUp() {
 
-        when(gifClientService.getRichRandomGif()).thenReturn("{\n" +
+        when(feignGifClientService.getRichRandomGif()).thenReturn("{\n" +
                 "  \"data\": {\n" +
                 "\"images\": {\n" +
                 " \"original\":" +
@@ -55,7 +55,7 @@ class ApiControllerTest {
                 "}\n" +
                 "}");
 
-        when(gifClientService.getBrokeRandomGif()).thenReturn("{\n" +
+        when(feignGifClientService.getBrokeRandomGif()).thenReturn("{\n" +
                 "  \"data\": {\n" +
                 "\"images\": {\n" +
                 " \"original\": {\t\"url\":\"test.gif\"\n" +
@@ -64,7 +64,7 @@ class ApiControllerTest {
                 "}\n" +
                 "}");
 
-        when(currencyClientService.getTodayCurrency(anyString())).thenReturn("{\n" +
+        when(feignCurrencyClientService.getTodayCurrency(anyString())).thenReturn("{\n" +
                 "    \"disclaimer\": \"Usage subject to terms: https://openexchangerates.org/terms\",\n" +
                 "    \"license\": \"https://openexchangerates.org/license\",\n" +
                 "    \"timestamp\": 1651708744,\n" +
@@ -74,7 +74,7 @@ class ApiControllerTest {
                 "    }\n" +
                 "}");
 
-        when(currencyClientService.getYesterdayCurrency(anyString(), anyString())).thenReturn("{\n" +
+        when(feignCurrencyClientService.getYesterdayCurrency(anyString(), anyString())).thenReturn("{\n" +
                 "    \"disclaimer\": \"Usage subject to terms: https://openexchangerates.org/terms\",\n" +
                 "    \"license\": \"https://openexchangerates.org/license\",\n" +
                 "    \"timestamp\": 1654286314,\n" +
@@ -167,28 +167,6 @@ class ApiControllerTest {
                     .andExpect(jsonPath("data.Today.base", is(defaultCurrencyBase)))
                     .andExpect(jsonPath("data.Today.to", is(defaultCurrencyTo)))
                     .andExpect(jsonPath("data.Today.rates", is(67.000005)));
-        }
-
-    }
-
-    @Nested
-    @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
-    class TestResolvePage {
-
-        @Test
-        void return_bad_request_incorrect_url() throws Exception {
-
-            mockMvc.perform(get("/resolve"))
-                    .andDo(print())
-                    .andExpect(status().isBadRequest());
-        }
-
-        @Test
-        void return_ok_request_correct_url() throws Exception {
-            mockMvc.perform(get("/resolve")
-                    .param("symbol", defaultCurrencyTo))
-                    .andDo(print())
-                    .andExpect(status().isOk());
         }
 
     }
